@@ -11,7 +11,7 @@ const Footer = () => {
     };
 
     return (
-        <footer className="bg-transparent text-white py-6 w-[100vw]">
+        <footer className="bg-transparent text-white py-6 w-full">
             <motion.div className="max-w-screen-xl mx-auto px-3 flex justify-center items-center space-x-8">
                 <motion.div variants={iconVariants} whileHover="whileHover" whileTap="whileTap">
                     <FaFacebook size={30} />

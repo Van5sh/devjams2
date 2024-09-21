@@ -1,10 +1,9 @@
-import Grid from "../app/components/table"
-import TimeTable from "./pages/Table/timetable";
+import Home1 from "./components/Home/home";
 
-export default function Home() {
+export default function Page() {
   return (
-    <div className="bg-black-700">
-      <TimeTable/>
+    <div>
+      <Home1/>
     </div>
   );
 };

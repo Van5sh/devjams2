@@ -35,7 +35,7 @@ const Home1 = () => {
               preserveAspectRatio="none"
             >
               <defs>
-                <linearGradient id="bg-gradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="bg-gradient" x1="0" y1="0" x2=" 0" y2="1">
                   <stop offset="0%" stopColor="#f8fafc" />
                   <stop offset="100%" stopColor="#e0e7ff" />
                 </linearGradient>
@@ -49,16 +49,13 @@ const Home1 = () => {
                   attributeName="d"
                   dur="10s"
                   repeatCount="indefinite"
-                  values="
-                      M0,400 C200,600 600,200 800,400 L800,600 L0,600 Z;
+                  values="M0,400 C200,600 600,200 800,400 L800,600 L0,600 Z;
                       M0,450 C200,550 600,250 800,350 L800,600 L0,600 Z;
-                      M0,400 C200,600 600,200 800,400 L800,600 L0,600 Z
-                    "
+                      M0,400 C200,600 600,200 800,400 L800,600 L0,600 Z"
                 />
               </path>
             </svg>
           </div>
-
           <div className="text-center flex flex-col items-center justify-center w-full md:w-1/2 p-6 space-y-6 relative z-10">
             <h1 className="text-5xl md:text-7xl text-purple-500 font-extrabold tracking-tight leading-tight animate__animated animate__fadeIn">
               Welcome to <br />

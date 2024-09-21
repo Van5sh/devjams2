@@ -1,4 +1,4 @@
-// pages/api/createTimeTable.ts
+// pages/api/user.ts
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
@@ -7,22 +7,23 @@ const prisma = new PrismaClient();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
-    const { name, slots, teamId, userId, data } = req.body;
+    const { name, email, password, googleId, teamId } = req.body;
 
     try {
-      const newTimeTable = await prisma.timeTable.create({
+      // Create a new user
+      const newUser = await prisma.user.create({
         data: {
           name,
-          slots,
+          email,
+          password,
+          googleId,
           teamId,
-          userId,
-          data,
         },
       });
 
-      return res.status(200).json({ success: true, data: newTimeTable });
+      return res.status(201).json({ success: true, data: newUser });
     } catch (error) {
-      console.error('Error creating timetable:', error);
+      console.error('Error creating user:', error);
       return res.status(500).json({ success: false, error: (error as Error).message });
     } finally {
       await prisma.$disconnect();

@@ -1,34 +1,25 @@
 import Link from "next/link";
 import React from "react";
 
-const Navbar = () => {  
+const Navbar = () => {
   return (
-    <nav className="bg-gradient-to-r from-purple-600 via-purple-400 to-blue-300 shadow-lg w-full h-[12vh] flex items-center">
-      <div className="max-w-screen-xl mx-auto w-full">
-        <ul className="flex justify-end items-center gap-6 sm:gap-8 md:gap-10 list-none">
+    <nav className="bg-gray-800 w-full h-[12vh] flex items-center shadow-md">
+      <div className="max-w-screen-xl mx-auto w-full px-4">
+        <ul className="flex justify-end items-center gap-8 list-none">
           <li>
-            <Link
-              href="/"
-              className="block py-2 px-4 md:px-6 text-white font-semibold hover:text-gray-300 transition duration-300 text-sm md:text-lg"
-            >
-              HOME
-            </Link>
+
+              <a className="text-white font-semibold hover:text-gray-300 transition duration-300" href="/">HOME</a>
+
           </li>
           <li>
-            <Link
-              href="/"
-              className="block py-2 px-4 md:px-6 text-white font-semibold hover:text-gray-300 transition duration-300 text-sm md:text-lg"
-            >
-              SIGN-IN
-            </Link>
+
+              <a className="text-white font-semibold hover:text-gray-300 transition duration-300" href="/signin">SIGN-IN</a>
+
           </li>
           <li>
-            <Link
-              href="./main"
-              className="block py-2 px-4 md:px-6 text-white font-semibold hover:text-gray-300 transition duration-300 text-sm md:text-lg"
-            >
-              TEAM
-            </Link>
+
+              <a className="text-white font-semibold hover:text-gray-300 transition duration-300" href="/main">TEAM</a>
+
           </li>
         </ul>
       </div>

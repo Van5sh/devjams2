@@ -1,4 +1,5 @@
-'use client';
+"use client"; 
+
 import React, { useState, useEffect, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
 
@@ -19,7 +20,6 @@ interface UserCursor extends CursorPosition {
   id: string;
   color: string;
 }
- 
 
 const Grid: React.FC = () => {
   const [cellColors, setCellColors] = useState<{ [key: string]: string }>({});
@@ -30,6 +30,7 @@ const Grid: React.FC = () => {
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [cursors, setCursors] = useState<UserCursor[]>([]);
+  const [isSyncEnabled, setIsSyncEnabled] = useState(true);
 
   const socket = useRef<Socket | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -54,29 +55,37 @@ const Grid: React.FC = () => {
     });
 
     socket.current.on('sync-all-text-inputs', (allInputs: { [key: string]: string }) => {
-      setSlotInput(allInputs['SlotInput'] || '');
-      setFacultyInput(allInputs['FacultyInput'] || '');
-      setVenueInput(allInputs['VenueInput'] || '');
-      setCreditsInput(allInputs['CreditsInput'] || '');
+      if (isSyncEnabled) {
+        setSlotInput(allInputs['SlotInput'] || '');
+        setFacultyInput(allInputs['FacultyInput'] || '');
+        setVenueInput(allInputs['VenueInput'] || '');
+        setCreditsInput(allInputs['CreditsInput'] || '');
+      }
     });
 
     socket.current.on('update-text-input', ({ id, value }: { id: string, value: string }) => {
-      switch (id) {
-        case 'SlotInput':
-          setSlotInput(value);
-          break;
-        case 'FacultyInput':
-          setFacultyInput(value);
-          break;
-        case 'VenueInput':
-          setVenueInput(value);
-          break;
-        case 'CreditsInput':
-          setCreditsInput(value);
-          break;
-        default:
-          break;
+      if (isSyncEnabled) {
+        switch (id) {
+          case 'SlotInput':
+            setSlotInput(value);
+            break;
+          case 'FacultyInput':
+            setFacultyInput(value);
+            break;
+          case 'VenueInput':
+            setVenueInput(value);
+            break;
+          case 'CreditsInput':
+            setCreditsInput(value);
+            break;
+          default:
+            break;
+        }
       }
+    });
+
+    socket.current.on('toggle-sync', (syncState: boolean) => {
+      setIsSyncEnabled(syncState);
     });
 
     socket.current.on('add-course', (courseData: CourseData) => {
@@ -123,7 +132,7 @@ const Grid: React.FC = () => {
         console.log('Socket disconnected');
       }
     };
-  }, []);
+  }, [isSyncEnabled]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -330,14 +339,22 @@ const Grid: React.FC = () => {
   };
 
   const handleTextInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>, 
+    e: React.ChangeEvent<HTMLInputElement>,
     setTextFunction: (value: string) => void,
-    socketKey : string
+    socketKey: string
   ) => {
-    const value = e .target.value;
+    const value = e.target.value;
     setTextFunction(value);
+    if (socket.current && isSyncEnabled) {
+      socket.current.emit('update-text-input', { id: socketKey, value: value });
+    }
+  };
+
+  const handleSyncToggle = () => {
+    const newSyncState = !isSyncEnabled;
+    setIsSyncEnabled(newSyncState);
     if (socket.current) {
-      socket.current.emit('update-text-input', {id : socketKey, value : value}); 
+      socket.current.emit('toggle-sync', newSyncState);
     }
   };
 
@@ -353,6 +370,27 @@ const Grid: React.FC = () => {
 
   return (
     <div ref={gridRef} className="container mx-auto px-4 py-8 text-black relative">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center">
+          <label htmlFor="sync-toggle" className="mr-2">Sync Inputs:</label>
+          <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+            <input
+              type="checkbox"
+              name="sync-toggle"
+              id="sync-toggle"
+              checked={isSyncEnabled}
+              onChange={handleSyncToggle}
+              className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+            />
+            <label
+              htmlFor="sync-toggle"
+              className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
+                isSyncEnabled ? 'bg-green-400' : 'bg-gray-300'
+              }`}
+            ></label>
+          </div>
+        </div>
+      </div>
       <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <input
           type="text"

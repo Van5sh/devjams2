@@ -37,7 +37,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponseServerI
   if (!res.socket.server.io) {
     const httpServer: HttpServer = res.socket.server as any;
     const io = new IOServer(httpServer, {
-      path: '/api/socket',
+      path: '/api/socket',    
     });
 
     io.on('connection', (socket) => {
@@ -94,4 +94,4 @@ export default function handler(req: NextApiRequest, res: NextApiResponseServerI
     console.log('Socket.io server already running');
   }
   res.end();
-}
+} 

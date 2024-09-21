@@ -23,10 +23,7 @@
     }, []);
 
     return (
-        <div className="min-h-screen flex flex-col relative overflow-hidden bg-white">
-        <header className="relative z-20">
-            <Navbar />
-        </header>
+        <div className="min-h-screen flex flex-col relative overflow-hidden bg-white">  
 
         <main className="flex-grow flex flex-col relative z-10">
             <section className="min-h-screen flex items-center justify-center px-4 bg-transparent relative">
@@ -125,9 +122,6 @@
             </section>
         </main>
 
-        <footer className="relative z-20">
-            <Footer />
-        </footer>
         </div>
     );
     };

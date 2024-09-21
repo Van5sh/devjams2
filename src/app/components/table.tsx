@@ -2,7 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
-
+import Prisma from '@prisma/client';
+interface GridProps {
+  id: string;
+}
 interface CourseData {
   id: string;
   slots: string;
@@ -21,7 +24,7 @@ interface UserCursor extends CursorPosition {
   color: string;
 }
 
-const Grid: React.FC = () => {
+const Grid: React.FC<GridProps> = ({id}) => {
   const [cellColors, setCellColors] = useState<{ [key: string]: string }>({});
   const [slotInput, setSlotInput] = useState('');
   const [facultyInput, setFacultyInput] = useState('');
@@ -52,6 +55,7 @@ const Grid: React.FC = () => {
     
     socket.current = io({
       path: '/api/socket',
+      query : {timeTableId : id }
     });
 
     socket.current.on('sync-all-text-inputs', (allInputs: { [key: string]: string }) => {
@@ -132,7 +136,11 @@ const Grid: React.FC = () => {
         console.log('Socket disconnected');
       }
     };
+<<<<<<< HEAD
   }, [isSyncEnabled]);
+=======
+  }, [id]);
+>>>>>>> 8f0cf6d92393def7d39ca082849dd6c143f780c4
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -295,7 +303,7 @@ const Grid: React.FC = () => {
     };
 
     if (socket.current) {
-      socket.current.emit('button-press', newCourse);
+      socket.current.emit('button-press', {timetableId : id, course : newCourse});
     }
 
     setSlotInput('');
@@ -334,7 +342,7 @@ const Grid: React.FC = () => {
 
   const handleDeleteCourse = (courseId: string) => {
     if (socket.current) {
-      socket.current.emit('delete-course', courseId);
+      socket.current.emit('delete-course', {timetableId : courseId});
     }
   };
 
@@ -354,7 +362,11 @@ const Grid: React.FC = () => {
     const newSyncState = !isSyncEnabled;
     setIsSyncEnabled(newSyncState);
     if (socket.current) {
+<<<<<<< HEAD
       socket.current.emit('toggle-sync', newSyncState);
+=======
+      socket.current.emit('update-text-input', {timeTableId : id , id : socketKey, value : value}); 
+>>>>>>> 8f0cf6d92393def7d39ca082849dd6c143f780c4
     }
   };
 
@@ -370,6 +382,7 @@ const Grid: React.FC = () => {
 
   return (
     <div ref={gridRef} className="container mx-auto px-4 py-8 text-black relative">
+<<<<<<< HEAD
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center">
           <label htmlFor="sync-toggle" className="mr-2">Sync Inputs:</label>
@@ -392,6 +405,9 @@ const Grid: React.FC = () => {
         </div>
       </div>
       <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+=======
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2  md:grid-cols-4 gap-4">
+>>>>>>> 8f0cf6d92393def7d39ca082849dd6c143f780c4
         <input
           type="text"
           value={slotInput}
@@ -423,21 +439,21 @@ const Grid: React.FC = () => {
       </div>
       <button
         onClick={handleSubmit}
-        className="mb-4 bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-700"
+        className="mb-4 bg-purple-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-700"
       >
         Add Course
       </button>
       <div className="overflow-x-auto shadow-lg rounded-lg mb-8">
         <table className="w-full table-auto border-collapse bg-white text-sm">
           <thead>
-            <tr className="bg-gray-100">
+            {/* <tr className="bg-purple-100">
               <th className="border p-2 font-semibold text-gray-700">Hours</th>
               {[...Array(14)].map((_, i) => (
                 <th key={i} className="border p-2 font-semibold text-gray-700">
                   {i === 6 ? 'Lunch' : `${(8 + Math.floor(i / 2) + (i % 2 ? 0.5 : 0)).toFixed(2)} ${i < 4 ? 'AM' : 'PM'}`}
                 </th>
               ))}
-            </tr>
+            </tr> */}
           </thead>
           <tbody>
             {timetableData.map((row, rowIndex) => (
@@ -445,13 +461,13 @@ const Grid: React.FC = () => {
                 {row.map((cell, colIndex) => (
                   <td 
                     key={colIndex} 
-                    className={`border p-2 text-center ${
+                    className={`border bg-purple-100 p-2 text-center ${
                       (rowIndex < 2 || colIndex === 0) ? 'font-semibold text-gray-700' : ''
                     }`}
                     style={getCellStyle(rowIndex, colIndex)}
                   >
                     {cell === 'LUNCH' ? (
-                      <div className="bg-gray-200 h-full flex items-center justify-center">
+                      <div className="h-full flex items-center justify-center">
                         <span className="transform">{cell}</span>
                       </div>
                     ) : cell}
@@ -467,7 +483,7 @@ const Grid: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse bg-white text-sm">
             <thead>
-              <tr className="bg-gray-100">
+              <tr className="bg-purple-300">
                 <th className="border p-2 font-semibold text-gray-700">Slots</th>
                 <th className="border p-2 font-semibold text-gray-700">Faculty</th>
                 <th className="border p-2 font-semibold text-gray-700">Venue</th>

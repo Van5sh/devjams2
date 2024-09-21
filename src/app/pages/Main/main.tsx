@@ -14,12 +14,9 @@
         if (typeof window !== 'undefined') {
             setScrollY(window.scrollY);
         }
-        };
-
-        // Add event listener for scroll
+        };        
         window.addEventListener('scroll', handleScroll);
 
-        // Clean up on unmount
         return () => {
         window.removeEventListener('scroll', handleScroll);
         };
@@ -32,9 +29,7 @@
         </header>
 
         <main className="flex-grow flex flex-col relative z-10">
-            {/* First Section with Animated SVG Background */}
             <section className="min-h-screen flex items-center justify-center px-4 bg-transparent relative">
-            {/* Animated SVG Background */}
             <div className="absolute inset-0 overflow-hidden">
                 <svg
                 className="w-full h-full"
@@ -66,7 +61,6 @@
                 </svg>
             </div>
 
-            {/* Content */}
             <div className="text-center flex flex-col items-center justify-center w-full p-6 space-y-6 relative z-10">
                 <h1 className="text-5xl md:text-7xl text-purple-500 font-extrabold tracking-tight leading-tight animate__animated animate__fadeIn">
                 Manage Your <br />

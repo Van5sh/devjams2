@@ -19,6 +19,7 @@ interface UserCursor extends CursorPosition {
 }
 
 const userCursors: { [socketId: string]: UserCursor } = {};
+let isSyncEnabled = true;
 
 const getRandomColor = () => {
   return `#${Math.floor(Math.random()*16777215).toString(16)}`;
@@ -42,21 +43,25 @@ export default function handler(req: NextApiRequest, res: NextApiResponseServerI
     io.on('connection', (socket) => {
       console.log('New client connected', socket.id);
       
-      // Assign a random color to the new user
       const userColor = getRandomColor();
       userCursors[socket.id] = { x: 0, y: 0, color: userColor };
 
       socket.emit('sync-all-text-inputs', textInputs);
+      socket.emit('toggle-sync', isSyncEnabled);
       
-      // Send existing cursor positions to the new client
       socket.emit('sync-cursors', userCursors);
-      
-      // Broadcast the new user's cursor to all other clients
       socket.broadcast.emit('cursor-update', { id: socket.id, ...userCursors[socket.id] });
 
       socket.on('update-text-input', ({ id, value }: { id: string, value: string }) => {
-        textInputs[id] = value;
-        io.emit('update-text-input', { id, value });
+        if (isSyncEnabled) {
+          textInputs[id] = value;
+          io.emit('update-text-input', { id, value });
+        }
+      });
+
+      socket.on('toggle-sync', (syncState: boolean) => {
+        isSyncEnabled = syncState;
+        io.emit('toggle-sync', isSyncEnabled);
       });
 
       socket.on('button-press', (courseData: any) => {

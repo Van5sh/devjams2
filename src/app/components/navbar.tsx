@@ -25,7 +25,7 @@ const Navbar = () => {
           </li>
           <li>
             <Link
-              href="/main"
+              href="/"
               className="block py-2 px-4 md:px-6 text-white font-semibold hover:text-gray-300 transition duration-300 text-sm md:text-lg"
             >
               TEAM

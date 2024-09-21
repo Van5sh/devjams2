@@ -1,55 +1,24 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-interface SlotData {
-  [key: string]: string[];
+interface CourseData {
+  id: string;
+  slots: string;
+  faculty: string;
+  venue?: string;
+  credits?: string;
 }
 
 const Grid: React.FC = () => {
   const [cellColors, setCellColors] = useState<{ [key: string]: string }>({});
   const [slotInput, setSlotInput] = useState('');
-  const [selectedSlots, setSelectedSlots] = useState<SlotData>({});
+  const [facultyInput, setFacultyInput] = useState('');
+  const [venueInput, setVenueInput] = useState('');
+  const [creditsInput, setCreditsInput] = useState('');
+  const [courses, setCourses] = useState<CourseData[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCellClick = (rowIndex: number, colIndex: number) => {
-    if (rowIndex < 2 || colIndex === 0 || colIndex === 7) return; // Ignore non-slot cells
-  
-    const day = timetableData[rowIndex][0];
-    const slot = timetableData[rowIndex][colIndex].split(' / ')[0];
-
-    const cellKey = `${rowIndex}-${colIndex}`;
-    setCellColors(prevColors => {
-        const newColors = { ...prevColors };
-        if (prevColors[cellKey]) {
-          delete newColors[cellKey];
-        } else {
-          newColors[cellKey] = color;
-        }
-        return newColors;
-      });
-  
-    // Update selectedSlots
-    setSelectedSlots(prevSlots => {
-      const newSlots = { ...prevSlots };
-      if (!newSlots[day]) {
-        newSlots[day] = [];
-      }
-      if (!newSlots[day].includes(slot)) {
-        newSlots[day].push(slot);
-      } return newSlots;
-    });
-  
-    // Log only the newly selected slot and day (if applicable)
-  };
   const color = "#88D66C";
-
-  const getCellStyle = (rowIndex: number, colIndex: number) => {
-    if (rowIndex < 2 || colIndex === 0 || colIndex === 7) return {}; // No style for non-slot cells
-    const cellKey = `${rowIndex}-${colIndex}`;
-    return {
-      backgroundColor: cellColors[cellKey] || '',
-      transition: 'background-color 0.3s',
-    };
-  };
 
   const timetableData = [
     ['Theory', '08:00 to 08:50', '09:00 to 09:50', '10:00 to 10:50', '11:00 to 11:50', '12:00 to 12:50', '-', 'LUNCH', '14:00 to 14:50', '15:00 to 15:50', '16:00 to 16:50', '17:00 to 17:50', '18:00 to 18:50', '18:51 to 19:00', '19:01 to 19:50'],
@@ -61,58 +30,226 @@ const Grid: React.FC = () => {
     ['FRI', 'E1 / L25', 'C1 / L26', 'TA1 / L27', 'TF1 / L28', 'TD1 / L29', 'L30', 'LUNCH', 'E2 / L55', 'C2 / L56', 'TA2 / L57', 'TF2 / L58', 'TDD2 / L59', 'L60', 'V7']
   ];
 
-  const handleSubmit = () => {
-    try {
-      const slots: SlotData = JSON.parse(slotInput);
-      setCellColors({});
-      setSelectedSlots({});
+  const getCellStyle = (rowIndex: number, colIndex: number) => {
+    if (rowIndex < 2 || colIndex === 0 || colIndex === 7) return {};
+    const cellKey = `${rowIndex}-${colIndex}`;
+    return {
+      backgroundColor: cellColors[cellKey] || '',
+      transition: 'background-color 0.3s',
+    };
+  };
 
-      Object.entries(slots).forEach(([day, daySlots]) => {
-        const rowIndex = timetableData.findIndex(row => row[0] === day.toUpperCase());
-        if (rowIndex > 1) {
-          daySlots.forEach(slot => {
-            const colIndex = timetableData[rowIndex].findIndex(cell => cell.split(' / ')[0] === slot);
-            if (colIndex > 0 && colIndex !== 7) {
-              const cellKey = `${rowIndex}-${colIndex}`;
-              setCellColors(prev => ({ ...prev, [cellKey]: color }));
-              setSelectedSlots(prev => {
-                const newSlots = { ...prev };
-                if (!newSlots[day]) {
-                  newSlots[day] = [];
-                }
-                if (!newSlots[day].includes(slot)) {
-                  newSlots[day].push(slot);
-                }
-                return newSlots;
-              });
-            }
-          });
-        }
-      });
-    } catch (error) {
-      console.error('Invalid JSON input:', error);
-      alert('Please enter valid JSON input.');
+  const validateSlot = (slot: string): boolean => {
+    return timetableData.slice(2).some(row => 
+      row.slice(1).some(cell => cell.split(' / ').includes(slot))
+    );
+  };
+
+  const isTheorySlot = (slot: string): boolean => {
+    return /^[A-Z]+\d+$/.test(slot) && !slot.startsWith('L');
+  };
+
+  const isLabSlot = (slot: string): boolean => {
+    return /^L\d+$/.test(slot);
+  };
+
+  const areConsecutiveLabSlots = (slots: string[]): boolean => {
+    if (slots.length !== 2 && slots.length !== 4) return false;
+    
+    const labNumbers = slots.map(slot => parseInt(slot.substring(1)));
+    labNumbers.sort((a, b) => a - b);
+
+    if (slots.length === 2) {
+      return labNumbers[1] - labNumbers[0] === 1;
+    } else {
+      return labNumbers[1] - labNumbers[0] === 1 && labNumbers[3] - labNumbers[2] === 1;
     }
   };
 
+  const areLabSlotsOnSameDay = (slots: string[]): boolean => {
+    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
+    const slotDays = slots.map(slot => {
+      for (let i = 2; i < timetableData.length; i++) {
+        if (timetableData[i].slice(1).some(cell => cell.split(' / ').includes(slot))) {
+          return days[i - 2];
+        }
+      }
+      return null;
+    });
+    return new Set(slotDays).size === 1;
+  };
+
+  const validateSlotCombination = (slots: string[]): string | null => {
+    const theorySlots = slots.filter(isTheorySlot);
+    const labSlots = slots.filter(isLabSlot);
+
+    if (theorySlots.length > 0 && labSlots.length > 0) {
+      return "Theory and lab slots cannot be selected together";
+    }
+
+    if (theorySlots.length > 0) {
+      const lastLetters = new Set(theorySlots.map(slot => slot[slot.length - 2]));
+      if (lastLetters.size !== 1) {
+        return "Theory slots must have the same last letter";
+      }
+    }
+
+    if (labSlots.length > 0) {
+      if (labSlots.length !== 2 && labSlots.length !== 4) {
+        return "Lab slots must be either 2 or 4 slots together";
+      }
+      if (!areConsecutiveLabSlots(labSlots)) {
+        return "Lab slots must be continuous";
+      }
+      if (!areLabSlotsOnSameDay(labSlots)) {
+        return "Lab slots must be on the same day";
+      }
+    }
+
+    return null;
+  };
+
+  const checkSlotClash = (newSlots: string[]) => {
+    const allOccupiedSlots = courses.flatMap(course => course.slots.split('+'));
+    
+    for (const newSlot of newSlots) {
+      if (!validateSlot(newSlot)) {
+        return `Slot ${newSlot} does not exist in the timetable`;
+      }
+
+      if (allOccupiedSlots.includes(newSlot)) {
+        return `Slot ${newSlot} clashes with an existing course`;
+      }
+
+      const clashingSlot = allOccupiedSlots.find(existingSlot => {
+        return timetableData.slice(2).some(row => 
+          row.slice(1).some(cell => {
+            const cellSlots = cell.split(' / ');
+            return cellSlots.includes(newSlot) && cellSlots.includes(existingSlot);
+          })
+        );
+      });
+
+      if (clashingSlot) {
+        return `Slot ${newSlot} clashes with existing slot ${clashingSlot} in the same cell`;
+      }
+    }
+
+    const combinationError = validateSlotCombination(newSlots);
+    if (combinationError) {
+      return combinationError;
+    }
+
+    return null;
+  };
+
+  const handleSubmit = () => {
+    if (!slotInput || !facultyInput) {
+      setError("Slots and Faculty Name are required!");
+      return;
+    }
+
+    const newSlots = slotInput.toUpperCase().split('+').map(slot => slot.trim());
+    const clashError = checkSlotClash(newSlots);
+    
+    if (clashError) {
+      setError(clashError);
+      return;
+    }
+
+    const slots = newSlots.join('+');
+    const newCourse: CourseData = {
+      id: Date.now().toString(),
+      slots,
+      faculty: facultyInput,
+      venue: venueInput || undefined,
+      credits: creditsInput || undefined,
+    };
+
+    setCourses(prevCourses => [...prevCourses, newCourse]);
+    updateCellColors(newSlots, color);
+
+    // Clear input fields
+    setSlotInput('');
+    setFacultyInput('');
+    setVenueInput('');
+    setCreditsInput('');
+  };
+
+  const updateCellColors = (slots: string[], color: string) => {
+    timetableData.forEach((row, rowIndex) => {
+      if (rowIndex >= 2) {
+        row.forEach((cell, colIndex) => {
+          if (colIndex > 0 && colIndex !== 7) {
+            const cellSlots = cell.split(' / ');
+            if (slots.some(slot => cellSlots.includes(slot))) {
+              const cellKey = `${rowIndex}-${colIndex}`;
+              setCellColors(prev => ({ ...prev, [cellKey]: color }));
+            }
+          }
+        });
+      }
+    });
+  };
+
+  const handleDeleteCourse = (courseId: string) => {
+    const courseToDelete = courses.find(course => course.id === courseId);
+    if (courseToDelete) {
+      const slotsToRemove = courseToDelete.slots.split('+');
+      updateCellColors(slotsToRemove, '');
+      setCourses(prevCourses => prevCourses.filter(course => course.id !== courseId));
+    }
+  };
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   return (
-    <div className="container mx-auto px-4 py-8 text-black">
-      <div className="mb-4 flex">
-        <textarea
+    <div className="container mx-auto px-4 py-8 text-black relative">
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <input
+          type="text"
           value={slotInput}
           onChange={(e) => setSlotInput(e.target.value)}
-          placeholder='Enter slots JSON (e.g., {"MON": ["A1", "F1"], "TUE": ["B1", "G1"]})'
-          className="flex-grow p-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows={3}
+          placeholder='Enter slots (e.g., A1+TA1 or L33+L44)'
+          className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-500 text-white p-2 rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-700"
-        >
-          Submit
-        </button>
+        <input
+          type="text"
+          value={facultyInput}
+          onChange={(e) => setFacultyInput(e.target.value)}
+          placeholder='Faculty Name'
+          className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <input
+          type="text"
+          value={venueInput}
+          onChange={(e) => setVenueInput(e.target.value)}
+          placeholder='Venue (optional)'
+          className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <input
+          type="text"
+          value={creditsInput}
+          onChange={(e) => setCreditsInput(e.target.value)}
+          placeholder='Credits (optional)'
+          className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
-      <div className="overflow-x-auto shadow-lg rounded-lg">
+      <button
+        onClick={handleSubmit}
+        className="mb-4 bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-700"
+      >
+        Add Course
+      </button>
+      <div className="overflow-x-auto shadow-lg rounded-lg mb-8">
         <table className="w-full table-auto border-collapse bg-white text-sm">
           <thead>
             <tr className="bg-gray-100">
@@ -131,11 +268,9 @@ const Grid: React.FC = () => {
                   <td 
                     key={colIndex} 
                     className={`border p-2 text-center ${
-                      rowIndex >= 2 && colIndex > 0 && colIndex !== 7 ? 'cursor-pointer hover:bg-gray-100' : 
                       (rowIndex < 2 || colIndex === 0) ? 'font-semibold text-gray-700' : ''
                     }`}
                     style={getCellStyle(rowIndex, colIndex)}
-                    onClick={() => handleCellClick(rowIndex, colIndex)}
                   >
                     {cell === 'LUNCH' ? (
                       <div className="bg-gray-200 h-full flex items-center justify-center">
@@ -150,11 +285,44 @@ const Grid: React.FC = () => {
         </table>
       </div>
       <div className="mt-4">
-        <h3 className="font-semibold">Selected Slots (JSON):</h3>
-        <pre className="bg-gray-100 p-2 rounded mt-2 overflow-x-auto">
-          {JSON.stringify(selectedSlots, null, 2)}
-        </pre>
+        <h3 className="font-semibold mb-2">Courses:</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto border-collapse bg-white text-sm">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border p-2 font-semibold text-gray-700">Slots</th>
+                <th className="border p-2 font-semibold text-gray-700">Faculty</th>
+                <th className="border p-2 font-semibold text-gray-700">Venue</th>
+                <th className="border p-2 font-semibold text-gray-700">Credits</th>
+                <th className="border p-2 font-semibold text-gray-700">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {courses.map((course) => (
+                <tr key={course.id} className="hover:bg-gray-50">
+                  <td className="border p-2">{course.slots}</td>
+                  <td className="border p-2">{course.faculty}</td>
+                  <td className="border p-2">{course.venue || '-'}</td>
+                  <td className="border p-2">{course.credits || '-'}</td>
+                  <td className="border p-2">
+                    <button
+                      onClick={() => handleDeleteCourse(course.id)}
+                      className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-700"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-md shadow-lg animate-fade-in-out">
+          {error}
+        </div>
+      )}
     </div>
   );
 };

@@ -362,19 +362,6 @@ const Grid: React.FC = () => {
 
   return (
     <div ref={gridRef} className="container mx-auto px-4 py-8 text-black relative">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center">
-          <label htmlFor="sync-toggle" className="mr-2">Sync Inputs:</label>
-          <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-            <label
-              htmlFor="sync-toggle"
-              className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
-                isSyncEnabled ? 'bg-green-400' : 'bg-gray-300'
-              }`}
-            ></label>
-          </div>
-        </div>
-      </div>
       <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <input
           type="text"

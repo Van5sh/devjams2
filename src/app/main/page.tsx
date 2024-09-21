@@ -24,12 +24,12 @@ const main = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row justify-center items-center space-y-6 sm:space-y-0 sm:space-x-8">
-          <Link href="/createTimeTable">
+          <Link href="/timetable">
             <button className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-10 rounded-full shadow-lg">
               Create a Team
             </button>
           </Link>
-          <Link href="/joinTeam">
+          <Link href="/timetable">
             <button className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-10 rounded-full shadow-lg">
               Join a Team
             </button>

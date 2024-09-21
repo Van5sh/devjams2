@@ -1,9 +1,9 @@
-import Home1 from "./pages/Home/home";
+import Grid from "../app/components/table"
 
 export default function Home() {
   return (
     <div className="bg-black-700">
-      <Home1/>
+      <Grid/>
     </div>
   );
 };

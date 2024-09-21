@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import io, { Socket } from 'socket.io-client';
 
 interface CourseData {
   id: string;
@@ -9,6 +10,17 @@ interface CourseData {
   credits?: string;
 }
 
+interface CursorPosition {
+  x: number;
+  y: number;
+}
+
+interface UserCursor extends CursorPosition {
+  id: string;
+  color: string;
+}
+ 
+
 const Grid: React.FC = () => {
   const [cellColors, setCellColors] = useState<{ [key: string]: string }>({});
   const [slotInput, setSlotInput] = useState('');
@@ -17,6 +29,10 @@ const Grid: React.FC = () => {
   const [creditsInput, setCreditsInput] = useState('');
   const [courses, setCourses] = useState<CourseData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [cursors, setCursors] = useState<UserCursor[]>([]);
+
+  const socket = useRef<Socket | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const color = "#88D66C";
 
@@ -29,6 +45,109 @@ const Grid: React.FC = () => {
     ['THU', 'D1 / L19', 'B1 / L20', 'G1 / L21', 'TE1 / L22', 'TCC1 / L23', 'L24', 'LUNCH', 'D2 / L49', 'B2 / L50', 'G2 / L51', 'TE2 / L52', 'TCC2 / L53', 'L54', 'V6'],
     ['FRI', 'E1 / L25', 'C1 / L26', 'TA1 / L27', 'TF1 / L28', 'TD1 / L29', 'L30', 'LUNCH', 'E2 / L55', 'C2 / L56', 'TA2 / L57', 'TF2 / L58', 'TDD2 / L59', 'L60', 'V7']
   ];
+
+  useEffect(() => {
+    console.log("Attempting to connect to WebSocket...");
+    
+    socket.current = io({
+      path: '/api/socket',
+    });
+
+    socket.current.on('sync-all-text-inputs', (allInputs: { [key: string]: string }) => {
+      setSlotInput(allInputs['SlotInput'] || '');
+      setFacultyInput(allInputs['FacultyInput'] || '');
+      setVenueInput(allInputs['VenueInput'] || '');
+      setCreditsInput(allInputs['CreditsInput'] || '');
+    });
+
+    socket.current.on('update-text-input', ({ id, value }: { id: string, value: string }) => {
+      switch (id) {
+        case 'SlotInput':
+          setSlotInput(value);
+          break;
+        case 'FacultyInput':
+          setFacultyInput(value);
+          break;
+        case 'VenueInput':
+          setVenueInput(value);
+          break;
+        case 'CreditsInput':
+          setCreditsInput(value);
+          break;
+        default:
+          break;
+      }
+    });
+
+    socket.current.on('add-course', (courseData: CourseData) => {
+      setCourses(prevCourses => [...prevCourses, courseData]);
+      updateCellColors(courseData.slots.split('+'), color);
+    });
+
+    socket.current.on('delete-course', (courseId: string) => {
+      setCourses(prevCourses => {
+        const courseToDelete = prevCourses.find(course => course.id === courseId);
+        if (courseToDelete) {
+          updateCellColors(courseToDelete.slots.split('+'), '');
+        }
+        return prevCourses.filter(course => course.id !== courseId);
+      });
+    });
+
+    socket.current.on('clear-inputs', clearAllInputs);
+
+    socket.current.on('sync-cursors', (userCursors: { [socketId: string]: UserCursor }) => {
+      setCursors(Object.entries(userCursors).map(([id, cursor]) => ({ ...cursor, id })));
+    });
+
+    socket.current.on('cursor-update', ({ id, x, y, color }: UserCursor) => {
+      setCursors(prevCursors => {
+        const existingCursorIndex = prevCursors.findIndex(cursor => cursor.id === id);
+        if (existingCursorIndex !== -1) {
+          const newCursors = [...prevCursors];
+          newCursors[existingCursorIndex] = { id, x, y, color };
+          return newCursors;
+        } else {
+          return [...prevCursors, { id, x, y, color }];
+        }
+      });
+    });
+
+    socket.current.on('cursor-remove', (id: string) => {
+      setCursors(prevCursors => prevCursors.filter(cursor => cursor.id !== id));
+    });
+
+    return () => {
+      if (socket.current) {
+        socket.current.disconnect();
+        console.log('Socket disconnected');
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      if (gridRef.current && socket.current) {
+        const rect = gridRef.current.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        socket.current.emit('cursor-move', { x, y });
+      }                 
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+  
+  const clearAllInputs = () => {
+    setSlotInput('');
+    setFacultyInput('');
+    setVenueInput('');
+    setCreditsInput('');
+  };
 
   const getCellStyle = (rowIndex: number, colIndex: number) => {
     if (rowIndex < 2 || colIndex === 0 || colIndex === 7) return {};
@@ -166,10 +285,10 @@ const Grid: React.FC = () => {
       credits: creditsInput || undefined,
     };
 
-    setCourses(prevCourses => [...prevCourses, newCourse]);
-    updateCellColors(newSlots, color);
+    if (socket.current) {
+      socket.current.emit('button-press', newCourse);
+    }
 
-    // Clear input fields
     setSlotInput('');
     setFacultyInput('');
     setVenueInput('');
@@ -177,27 +296,48 @@ const Grid: React.FC = () => {
   };
 
   const updateCellColors = (slots: string[], color: string) => {
-    timetableData.forEach((row, rowIndex) => {
-      if (rowIndex >= 2) {
-        row.forEach((cell, colIndex) => {
-          if (colIndex > 0 && colIndex !== 7) {
-            const cellSlots = cell.split(' / ');
-            if (slots.some(slot => cellSlots.includes(slot))) {
-              const cellKey = `${rowIndex}-${colIndex}`;
-              setCellColors(prev => ({ ...prev, [cellKey]: color }));
+    setCellColors(prevColors => {
+      const newColors = { ...prevColors };
+      timetableData.forEach((row, rowIndex) => {
+        if (rowIndex >= 2) {
+          row.forEach((cell, colIndex) => {
+            if (colIndex > 0 && colIndex !== 7) {
+              const cellSlots = cell.split(' / ');
+              if (slots.some(slot => cellSlots.includes(slot))) {
+                const cellKey = `${rowIndex}-${colIndex}`;
+                newColors[cellKey] = color;
+              }
             }
-          }
-        });
-      }
+          });
+        }
+      });
+      return newColors;
     });
   };
+  // const handleDeleteCourse = (courseId: string) => {
+  //   const courseToDelete = courses.find(course => course.id === courseId);
+  //   if (courseToDelete) {
+  //     const slotsToRemove = courseToDelete.slots.split('+');
+  //     updateCellColors(slotsToRemove, '');
+  //     setCourses(prevCourses => prevCourses.filter(course => course.id !== courseId));
+  //   }
+  // };
 
   const handleDeleteCourse = (courseId: string) => {
-    const courseToDelete = courses.find(course => course.id === courseId);
-    if (courseToDelete) {
-      const slotsToRemove = courseToDelete.slots.split('+');
-      updateCellColors(slotsToRemove, '');
-      setCourses(prevCourses => prevCourses.filter(course => course.id !== courseId));
+    if (socket.current) {
+      socket.current.emit('delete-course', courseId);
+    }
+  };
+
+  const handleTextInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>, 
+    setTextFunction: (value: string) => void,
+    socketKey : string
+  ) => {
+    const value = e .target.value;
+    setTextFunction(value);
+    if (socket.current) {
+      socket.current.emit('update-text-input', {id : socketKey, value : value}); 
     }
   };
 
@@ -212,33 +352,33 @@ const Grid: React.FC = () => {
   }, [error]);
 
   return (
-    <div className="container mx-auto px-4 py-8 text-black relative">
+    <div ref={gridRef} className="container mx-auto px-4 py-8 text-black relative">
       <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <input
           type="text"
           value={slotInput}
-          onChange={(e) => setSlotInput(e.target.value)}
+          onChange={(e) => handleTextInputChange(e, setSlotInput, "SlotInput")}
           placeholder='Enter slots (e.g., A1+TA1 or L33+L44)'
           className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="text"
           value={facultyInput}
-          onChange={(e) => setFacultyInput(e.target.value)}
+          onChange={(e) => handleTextInputChange(e, setFacultyInput, "FacultyInput")}
           placeholder='Faculty Name'
           className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="text"
           value={venueInput}
-          onChange={(e) => setVenueInput(e.target.value)}
+          onChange={(e) => handleTextInputChange(e, setVenueInput, "VenueInput")}
           placeholder='Venue (optional)'
           className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="text"
           value={creditsInput}
-          onChange={(e) => setCreditsInput(e.target.value)}
+          onChange={(e) => handleTextInputChange(e, setCreditsInput, "CreditsInput")}
           placeholder='Credits (optional)'
           className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -323,6 +463,22 @@ const Grid: React.FC = () => {
           {error}
         </div>
       )}
+      {cursors.map(cursor => (
+        <div
+          key={cursor.id}
+          style={{
+            position: 'absolute',
+            left: cursor.x,
+            top: cursor.y,
+            width: '20px',
+            height: '20px',
+            borderRadius: '50%',
+            backgroundColor: cursor.color,
+            pointerEvents: 'none',
+            zIndex: 1000,
+          }}
+        />
+      ))}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import Navbar from "@/app/components/navbar";
 import Footer from "@/app/components/footer";
 import Image from "next/image";
 import Card from "@/app/components/card";
+import Link from "next/link";
 
 const Home1 = () => {
   const [scrollY, setScrollY] = useState(0);
@@ -22,9 +23,7 @@ const Home1 = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-white">
-      <header className="relative z-20">
-        <Navbar />
-      </header>
+
 
       <main className="flex-grow flex flex-col relative z-10">
         <section className="min-h-screen flex flex-col md:flex-row items-center justify-center px-4 bg-transparent relative">
@@ -65,9 +64,11 @@ const Home1 = () => {
               Streamline your course selection process at VIT and take control
               of your academic journey.
             </p>
+            <Link href="/createTimeTable">
             <button className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 hover:from-blue-600 hover:to-blue-800 transition-all duration-300 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:shadow-2xl hover:scale-105">
               Get Started
             </button>
+            </Link>
           </div>
 
           <div className="flex justify-center md:w-1/2 mt-6 md:mt-0 relative z-10">
@@ -170,12 +171,10 @@ const Home1 = () => {
           </div>
         </section>
       </main>
-
-      <footer className="relative z-20">
-        <Footer />
-      </footer>
     </div>
   );
 };
 
 export default Home1;
+
+

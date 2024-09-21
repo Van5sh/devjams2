@@ -1,10 +1,15 @@
-import Home1 from "./components/Home/home";
+// pages/index.tsx
+import Footer from "./components/footer";
+import Navbar from "./components/navbar";
+import Home1 from "../app/pages/Home/page";
+import Link from "next/link";
 
 export default function Page() {
   return (
-    <div>
-      <Home1/>
+    <div className="bg-black-700">
+      <Navbar />
+        <Home1 />
+      <Footer />
     </div>
   );
-};
-
+}

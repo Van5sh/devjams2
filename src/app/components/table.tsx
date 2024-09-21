@@ -1,7 +1,10 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
-
+import Prisma from '@prisma/client';
+interface GridProps {
+  id: string;
+}
 interface CourseData {
   id: string;
   slots: string;
@@ -21,7 +24,7 @@ interface UserCursor extends CursorPosition {
 }
  
 
-const Grid: React.FC = () => {
+const Grid: React.FC<GridProps> = ({id}) => {
   const [cellColors, setCellColors] = useState<{ [key: string]: string }>({});
   const [slotInput, setSlotInput] = useState('');
   const [facultyInput, setFacultyInput] = useState('');
@@ -51,6 +54,7 @@ const Grid: React.FC = () => {
     
     socket.current = io({
       path: '/api/socket',
+      query : {timeTableId : id }
     });
 
     socket.current.on('sync-all-text-inputs', (allInputs: { [key: string]: string }) => {
@@ -123,7 +127,7 @@ const Grid: React.FC = () => {
         console.log('Socket disconnected');
       }
     };
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -286,7 +290,7 @@ const Grid: React.FC = () => {
     };
 
     if (socket.current) {
-      socket.current.emit('button-press', newCourse);
+      socket.current.emit('button-press', {timetableId : id, course : newCourse});
     }
 
     setSlotInput('');
@@ -325,7 +329,7 @@ const Grid: React.FC = () => {
 
   const handleDeleteCourse = (courseId: string) => {
     if (socket.current) {
-      socket.current.emit('delete-course', courseId);
+      socket.current.emit('delete-course', {timetableId : courseId});
     }
   };
 
@@ -337,7 +341,7 @@ const Grid: React.FC = () => {
     const value = e .target.value;
     setTextFunction(value);
     if (socket.current) {
-      socket.current.emit('update-text-input', {id : socketKey, value : value}); 
+      socket.current.emit('update-text-input', {timeTableId : id , id : socketKey, value : value}); 
     }
   };
 

@@ -1,4 +1,4 @@
-import Home1 from '@/app/components/Home/home'
+import Home1 from '@/app/Home/home'
 import React from 'react'
 
 export default function page() {

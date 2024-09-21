@@ -1,10 +1,7 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import io, { Socket } from 'socket.io-client';
-import Prisma from '@prisma/client';
-interface GridProps {
-  id: string;
-}
+
 interface CourseData {
   id: string;
   slots: string;
@@ -22,9 +19,8 @@ interface UserCursor extends CursorPosition {
   id: string;
   color: string;
 }
- 
 
-const Grid: React.FC<GridProps> = ({id}) => {
+const Grid: React.FC = () => {
   const [cellColors, setCellColors] = useState<{ [key: string]: string }>({});
   const [slotInput, setSlotInput] = useState('');
   const [facultyInput, setFacultyInput] = useState('');
@@ -37,7 +33,7 @@ const Grid: React.FC<GridProps> = ({id}) => {
   const socket = useRef<Socket | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const color = "#88D66C";
+  const color = "#88D66C"; // Default color for courses
 
   const timetableData = [
     ['Theory', '08:00 to 08:50', '09:00 to 09:50', '10:00 to 10:50', '11:00 to 11:50', '12:00 to 12:50', '-', 'LUNCH', '14:00 to 14:50', '15:00 to 15:50', '16:00 to 16:50', '17:00 to 17:50', '18:00 to 18:50', '18:51 to 19:00', '19:01 to 19:50'],
@@ -50,12 +46,7 @@ const Grid: React.FC<GridProps> = ({id}) => {
   ];
 
   useEffect(() => {
-    console.log("Attempting to connect to WebSocket...");
-    
-    socket.current = io({
-      path: '/api/socket',
-      query : {timeTableId : id }
-    });
+    socket.current = io(); // Connect to WebSocket server
 
     socket.current.on('sync-all-text-inputs', (allInputs: { [key: string]: string }) => {
       setSlotInput(allInputs['SlotInput'] || '');
@@ -64,207 +55,21 @@ const Grid: React.FC<GridProps> = ({id}) => {
       setCreditsInput(allInputs['CreditsInput'] || '');
     });
 
-    socket.current.on('update-text-input', ({ id, value }: { id: string, value: string }) => {
-      switch (id) {
-        case 'SlotInput':
-          setSlotInput(value);
-          break;
-        case 'FacultyInput':
-          setFacultyInput(value);
-          break;
-        case 'VenueInput':
-          setVenueInput(value);
-          break;
-        case 'CreditsInput':
-          setCreditsInput(value);
-          break;
-        default:
-          break;
-      }
-    });
-
     socket.current.on('add-course', (courseData: CourseData) => {
       setCourses(prevCourses => [...prevCourses, courseData]);
       updateCellColors(courseData.slots.split('+'), color);
     });
 
     socket.current.on('delete-course', (courseId: string) => {
-      setCourses(prevCourses => {
-        const courseToDelete = prevCourses.find(course => course.id === courseId);
-        if (courseToDelete) {
-          updateCellColors(courseToDelete.slots.split('+'), '');
-        }
-        return prevCourses.filter(course => course.id !== courseId);
-      });
-    });
-
-    socket.current.on('clear-inputs', clearAllInputs);
-
-    socket.current.on('sync-cursors', (userCursors: { [socketId: string]: UserCursor }) => {
-      setCursors(Object.entries(userCursors).map(([id, cursor]) => ({ ...cursor, id })));
-    });
-
-    socket.current.on('cursor-update', ({ id, x, y, color }: UserCursor) => {
-      setCursors(prevCursors => {
-        const existingCursorIndex = prevCursors.findIndex(cursor => cursor.id === id);
-        if (existingCursorIndex !== -1) {
-          const newCursors = [...prevCursors];
-          newCursors[existingCursorIndex] = { id, x, y, color };
-          return newCursors;
-        } else {
-          return [...prevCursors, { id, x, y, color }];
-        }
-      });
-    });
-
-    socket.current.on('cursor-remove', (id: string) => {
-      setCursors(prevCursors => prevCursors.filter(cursor => cursor.id !== id));
+      setCourses(prevCourses => prevCourses.filter(course => course.id !== courseId));
     });
 
     return () => {
       if (socket.current) {
         socket.current.disconnect();
-        console.log('Socket disconnected');
       }
-    };
-  }, [id]);
-
-  useEffect(() => {
-    const handleMouseMove = (event: MouseEvent) => {
-      if (gridRef.current && socket.current) {
-        const rect = gridRef.current.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        socket.current.emit('cursor-move', { x, y });
-      }                 
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
-  
-  const clearAllInputs = () => {
-    setSlotInput('');
-    setFacultyInput('');
-    setVenueInput('');
-    setCreditsInput('');
-  };
-
-  const getCellStyle = (rowIndex: number, colIndex: number) => {
-    if (rowIndex < 2 || colIndex === 0 || colIndex === 7) return {};
-    const cellKey = `${rowIndex}-${colIndex}`;
-    return {
-      backgroundColor: cellColors[cellKey] || '',
-      transition: 'background-color 0.3s',
-    };
-  };
-
-  const validateSlot = (slot: string): boolean => {
-    return timetableData.slice(2).some(row => 
-      row.slice(1).some(cell => cell.split(' / ').includes(slot))
-    );
-  };
-
-  const isTheorySlot = (slot: string): boolean => {
-    return /^[A-Z]+\d+$/.test(slot) && !slot.startsWith('L');
-  };
-
-  const isLabSlot = (slot: string): boolean => {
-    return /^L\d+$/.test(slot);
-  };
-
-  const areConsecutiveLabSlots = (slots: string[]): boolean => {
-    if (slots.length !== 2 && slots.length !== 4) return false;
-    
-    const labNumbers = slots.map(slot => parseInt(slot.substring(1)));
-    labNumbers.sort((a, b) => a - b);
-
-    if (slots.length === 2) {
-      return labNumbers[1] - labNumbers[0] === 1;
-    } else {
-      return labNumbers[1] - labNumbers[0] === 1 && labNumbers[3] - labNumbers[2] === 1;
-    }
-  };
-
-  const areLabSlotsOnSameDay = (slots: string[]): boolean => {
-    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
-    const slotDays = slots.map(slot => {
-      for (let i = 2; i < timetableData.length; i++) {
-        if (timetableData[i].slice(1).some(cell => cell.split(' / ').includes(slot))) {
-          return days[i - 2];
-        }
-      }
-      return null;
-    });
-    return new Set(slotDays).size === 1;
-  };
-
-  const validateSlotCombination = (slots: string[]): string | null => {
-    const theorySlots = slots.filter(isTheorySlot);
-    const labSlots = slots.filter(isLabSlot);
-
-    if (theorySlots.length > 0 && labSlots.length > 0) {
-      return "Theory and lab slots cannot be selected together";
-    }
-
-    if (theorySlots.length > 0) {
-      const lastLetters = new Set(theorySlots.map(slot => slot[slot.length - 2]));
-      if (lastLetters.size !== 1) {
-        return "Theory slots must have the same last letter";
-      }
-    }
-
-    if (labSlots.length > 0) {
-      if (labSlots.length !== 2 && labSlots.length !== 4) {
-        return "Lab slots must be either 2 or 4 slots together";
-      }
-      if (!areConsecutiveLabSlots(labSlots)) {
-        return "Lab slots must be continuous";
-      }
-      if (!areLabSlotsOnSameDay(labSlots)) {
-        return "Lab slots must be on the same day";
-      }
-    }
-
-    return null;
-  };
-
-  const checkSlotClash = (newSlots: string[]) => {
-    const allOccupiedSlots = courses.flatMap(course => course.slots.split('+'));
-    
-    for (const newSlot of newSlots) {
-      if (!validateSlot(newSlot)) {
-        return `Slot ${newSlot} does not exist in the timetable`;
-      }
-
-      if (allOccupiedSlots.includes(newSlot)) {
-        return `Slot ${newSlot} clashes with an existing course`;
-      }
-
-      const clashingSlot = allOccupiedSlots.find(existingSlot => {
-        return timetableData.slice(2).some(row => 
-          row.slice(1).some(cell => {
-            const cellSlots = cell.split(' / ');
-            return cellSlots.includes(newSlot) && cellSlots.includes(existingSlot);
-          })
-        );
-      });
-
-      if (clashingSlot) {
-        return `Slot ${newSlot} clashes with existing slot ${clashingSlot} in the same cell`;
-      }
-    }
-
-    const combinationError = validateSlotCombination(newSlots);
-    if (combinationError) {
-      return combinationError;
-    }
-
-    return null;
-  };
 
   const handleSubmit = () => {
     if (!slotInput || !facultyInput) {
@@ -272,31 +77,25 @@ const Grid: React.FC<GridProps> = ({id}) => {
       return;
     }
 
-    const newSlots = slotInput.toUpperCase().split('+').map(slot => slot.trim());
-    const clashError = checkSlotClash(newSlots);
-    
-    if (clashError) {
-      setError(clashError);
-      return;
-    }
-
-    const slots = newSlots.join('+');
+    const slots = slotInput.split('+').map(slot => slot.trim());
     const newCourse: CourseData = {
       id: Date.now().toString(),
-      slots,
+      slots: slots.join('+'),
       faculty: facultyInput,
       venue: venueInput || undefined,
       credits: creditsInput || undefined,
     };
 
-    if (socket.current) {
-      socket.current.emit('button-press', {timetableId : id, course : newCourse});
-    }
+    socket.current?.emit('add-course', newCourse);
 
     setSlotInput('');
     setFacultyInput('');
     setVenueInput('');
     setCreditsInput('');
+  };
+
+  const handleDeleteCourse = (courseId: string) => {
+    socket.current?.emit('delete-course', courseId);
   };
 
   const updateCellColors = (slots: string[], color: string) => {
@@ -318,71 +117,43 @@ const Grid: React.FC<GridProps> = ({id}) => {
       return newColors;
     });
   };
-  // const handleDeleteCourse = (courseId: string) => {
-  //   const courseToDelete = courses.find(course => course.id === courseId);
-  //   if (courseToDelete) {
-  //     const slotsToRemove = courseToDelete.slots.split('+');
-  //     updateCellColors(slotsToRemove, '');
-  //     setCourses(prevCourses => prevCourses.filter(course => course.id !== courseId));
-  //   }
-  // };
 
-  const handleDeleteCourse = (courseId: string) => {
-    if (socket.current) {
-      socket.current.emit('delete-course', {timetableId : courseId});
-    }
+  const getCellStyle = (rowIndex: number, colIndex: number) => {
+    const cellKey = `${rowIndex}-${colIndex}`;
+    return {
+      backgroundColor: cellColors[cellKey] || '',
+      transition: 'background-color 0.3s',
+    };
   };
-
-  const handleTextInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>, 
-    setTextFunction: (value: string) => void,
-    socketKey : string
-  ) => {
-    const value = e .target.value;
-    setTextFunction(value);
-    if (socket.current) {
-      socket.current.emit('update-text-input', {timeTableId : id , id : socketKey, value : value}); 
-    }
-  };
-
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => {
-        setError(null);
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
 
   return (
-    <div ref={gridRef} className="container mx-auto px-4 py-8 text-black relative">
-      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2  md:grid-cols-4 gap-4">
+    <div className="container mx-auto px-4 py-8 text-black relative">
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <input
           type="text"
           value={slotInput}
-          onChange={(e) => handleTextInputChange(e, setSlotInput, "SlotInput")}
-          placeholder='Enter slots (e.g., A1+TA1 or L33+L44)'
+          onChange={(e) => setSlotInput(e.target.value)}
+          placeholder='Enter slots (e.g., A1+TA1)'
           className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="text"
           value={facultyInput}
-          onChange={(e) => handleTextInputChange(e, setFacultyInput, "FacultyInput")}
+          onChange={(e) => setFacultyInput(e.target.value)}
           placeholder='Faculty Name'
           className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="text"
           value={venueInput}
-          onChange={(e) => handleTextInputChange(e, setVenueInput, "VenueInput")}
+          onChange={(e) => setVenueInput(e.target.value)}
           placeholder='Venue (optional)'
           className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="text"
           value={creditsInput}
-          onChange={(e) => handleTextInputChange(e, setCreditsInput, "CreditsInput")}
+          onChange={(e) => setCreditsInput(e.target.value)}
           placeholder='Credits (optional)'
           className="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
@@ -393,24 +164,15 @@ const Grid: React.FC<GridProps> = ({id}) => {
       >
         Add Course
       </button>
+
       <div className="overflow-x-auto shadow-lg rounded-lg mb-8">
         <table className="w-full table-auto border-collapse bg-white text-sm">
-          <thead>
-            {/* <tr className="bg-purple-100">
-              <th className="border p-2 font-semibold text-gray-700">Hours</th>
-              {[...Array(14)].map((_, i) => (
-                <th key={i} className="border p-2 font-semibold text-gray-700">
-                  {i === 6 ? 'Lunch' : `${(8 + Math.floor(i / 2) + (i % 2 ? 0.5 : 0)).toFixed(2)} ${i < 4 ? 'AM' : 'PM'}`}
-                </th>
-              ))}
-            </tr> */}
-          </thead>
           <tbody>
             {timetableData.map((row, rowIndex) => (
               <tr key={row[0]} className={rowIndex % 2 === 0 ? 'bg-gray-50' : ''}>
                 {row.map((cell, colIndex) => (
-                  <td 
-                    key={colIndex} 
+                  <td
+                    key={colIndex}
                     className={`border bg-purple-100 p-2 text-center ${
                       (rowIndex < 2 || colIndex === 0) ? 'font-semibold text-gray-700' : ''
                     }`}
@@ -428,6 +190,7 @@ const Grid: React.FC<GridProps> = ({id}) => {
           </tbody>
         </table>
       </div>
+
       <div className="mt-4">
         <h3 className="font-semibold mb-2">Courses:</h3>
         <div className="overflow-x-auto">
@@ -462,11 +225,13 @@ const Grid: React.FC<GridProps> = ({id}) => {
           </table>
         </div>
       </div>
+
       {error && (
         <div className="fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-md shadow-lg animate-fade-in-out">
           {error}
         </div>
       )}
+
       {cursors.map(cursor => (
         <div
           key={cursor.id}

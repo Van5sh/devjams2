@@ -13,7 +13,6 @@ interface AccordionItemProps {
   onTeamClick: (teamId: string) => void;
 }
 
-
 const AccordionItem: React.FC<AccordionItemProps> = ({ title, teams, onTeamClick }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -22,9 +21,9 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, teams, onTeamClick
   };
 
   return (
-    <div className="border-b border-gray-600 last:border-b-0">
+    <div className="border-b border-white last:border-b-0">
       <button
-        className="w-full p-4 text-left bg-gray-700 hover:bg-gray-600 transition-colors duration-200 flex justify-between items-center"
+        className="w-full p-4 text-left bg-gray-700 hover:bg-gray-600 transition-all duration-300 flex justify-between items-center text-white font-medium"
         onClick={toggleOpen}
       >
         <span>{title}</span>
@@ -32,12 +31,12 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, teams, onTeamClick
       </button>
       {isOpen && (
         <div className="p-4 bg-gray-800">
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {teams.map((team) => (
               <li key={team.id}>
                 <button
                   onClick={() => onTeamClick(team.id)}
-                  className="w-full text-left px-3 py-2 rounded bg-gray-700 hover:bg-gray-600 transition-colors duration-200"
+                  className="w-full px-4 py-2 text-left rounded-md text-white font-medium bg-gray-700 hover:bg-gray-600 transition-all duration-300"
                 >
                   {team.name}
                 </button>

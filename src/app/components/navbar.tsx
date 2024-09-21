@@ -1,7 +1,8 @@
 import Link from "next/link";
 import React from "react";
 
-const Navbar: React.FC = () => {
+
+const Navbar = () => {
   return (
     <nav className="bg-gradient-to-r from-purple-600 via-purple-400 to-blue-300 shadow-lg w-full h-[12vh] flex items-center">
       <div className="max-w-screen-xl mx-auto w-full">
@@ -24,7 +25,7 @@ const Navbar: React.FC = () => {
           </li>
           <li>
             <Link
-              href="/"
+              href="/main"
               className="block py-2 px-4 md:px-6 text-white font-semibold hover:text-gray-300 transition duration-300 text-sm md:text-lg"
             >
               TEAM

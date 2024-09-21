@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 
 const Navbar: React.FC = () => {
@@ -6,28 +7,28 @@ const Navbar: React.FC = () => {
       <div className="max-w-screen-xl mx-auto px-4">
         <ul className="flex justify-end gap-2 sm:gap-4 md:gap-6 list-none w-full">
           <li>
-            <a
+            <Link
               href="/"
               className={`block py-2 px-2 md:px-3 text-purple-800 font-bold hover:text-gray-700 text-sm md:text-base`}
             >
               HOME
-            </a>
+            </Link>
           </li>
           <li>
-            <a
+            <Link
               href="/"
               className={`block py-2 px-2 md:px-3 text-purple-800 font-bold hover:text-gray-700 text-sm md:text-base`}
             >
               SIGN-IN
-            </a>
+            </Link>
           </li>
           <li>
-            <a
+            <Link
               href="/"
               className={`block py-2 px-2 md:px-3 text-purple-800 font-bold hover:text-gray-700 text-sm md:text-base`}
             >
               TEAM
-            </a>
+            </Link>
           </li>
         </ul>
       </div>

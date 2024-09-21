@@ -3,13 +3,13 @@ import React from "react";
 
 const Navbar: React.FC = () => {
   return (
-    <nav className="bg-gradient-to-r from-purple-500 via-purple-300 to-blue-100 md:py-5 w-full">
-      <div className="max-w-screen-xl mx-auto px-4">
-        <ul className="flex justify-end gap-2 sm:gap-4 md:gap-6 list-none w-full">
+    <nav className="bg-gradient-to-r from-purple-600 via-purple-400 to-blue-300 shadow-lg w-full h-[12vh] flex items-center">
+      <div className="max-w-screen-xl mx-auto w-full">
+        <ul className="flex justify-end items-center gap-6 sm:gap-8 md:gap-10 list-none">
           <li>
             <Link
               href="/"
-              className={`block py-2 px-2 md:px-3 text-purple-800 font-bold hover:text-gray-700 text-sm md:text-base`}
+              className="block py-2 px-4 md:px-6 text-white font-semibold hover:text-gray-300 transition duration-300 text-sm md:text-lg"
             >
               HOME
             </Link>
@@ -17,7 +17,7 @@ const Navbar: React.FC = () => {
           <li>
             <Link
               href="/"
-              className={`block py-2 px-2 md:px-3 text-purple-800 font-bold hover:text-gray-700 text-sm md:text-base`}
+              className="block py-2 px-4 md:px-6 text-white font-semibold hover:text-gray-300 transition duration-300 text-sm md:text-lg"
             >
               SIGN-IN
             </Link>
@@ -25,7 +25,7 @@ const Navbar: React.FC = () => {
           <li>
             <Link
               href="/"
-              className={`block py-2 px-2 md:px-3 text-purple-800 font-bold hover:text-gray-700 text-sm md:text-base`}
+              className="block py-2 px-4 md:px-6 text-white font-semibold hover:text-gray-300 transition duration-300 text-sm md:text-lg"
             >
               TEAM
             </Link>

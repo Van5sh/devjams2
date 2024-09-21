@@ -353,7 +353,7 @@ const Grid: React.FC = () => {
 
   return (
     <div ref={gridRef} className="container mx-auto px-4 py-8 text-black relative">
-      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2  md:grid-cols-4 gap-4">
         <input
           type="text"
           value={slotInput}
@@ -385,21 +385,21 @@ const Grid: React.FC = () => {
       </div>
       <button
         onClick={handleSubmit}
-        className="mb-4 bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-700"
+        className="mb-4 bg-purple-500 text-white p-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-700"
       >
         Add Course
       </button>
       <div className="overflow-x-auto shadow-lg rounded-lg mb-8">
         <table className="w-full table-auto border-collapse bg-white text-sm">
           <thead>
-            <tr className="bg-gray-100">
+            {/* <tr className="bg-purple-100">
               <th className="border p-2 font-semibold text-gray-700">Hours</th>
               {[...Array(14)].map((_, i) => (
                 <th key={i} className="border p-2 font-semibold text-gray-700">
                   {i === 6 ? 'Lunch' : `${(8 + Math.floor(i / 2) + (i % 2 ? 0.5 : 0)).toFixed(2)} ${i < 4 ? 'AM' : 'PM'}`}
                 </th>
               ))}
-            </tr>
+            </tr> */}
           </thead>
           <tbody>
             {timetableData.map((row, rowIndex) => (
@@ -407,13 +407,13 @@ const Grid: React.FC = () => {
                 {row.map((cell, colIndex) => (
                   <td 
                     key={colIndex} 
-                    className={`border p-2 text-center ${
+                    className={`border bg-purple-100 p-2 text-center ${
                       (rowIndex < 2 || colIndex === 0) ? 'font-semibold text-gray-700' : ''
                     }`}
                     style={getCellStyle(rowIndex, colIndex)}
                   >
                     {cell === 'LUNCH' ? (
-                      <div className="bg-gray-200 h-full flex items-center justify-center">
+                      <div className="h-full flex items-center justify-center">
                         <span className="transform">{cell}</span>
                       </div>
                     ) : cell}
@@ -429,7 +429,7 @@ const Grid: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full table-auto border-collapse bg-white text-sm">
             <thead>
-              <tr className="bg-gray-100">
+              <tr className="bg-purple-300">
                 <th className="border p-2 font-semibold text-gray-700">Slots</th>
                 <th className="border p-2 font-semibold text-gray-700">Faculty</th>
                 <th className="border p-2 font-semibold text-gray-700">Venue</th>

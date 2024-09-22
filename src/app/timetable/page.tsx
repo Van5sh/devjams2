@@ -361,8 +361,9 @@ const Grid: React.FC = () => {
   }, [error]);
 
   return (
-    <div ref={gridRef} className="container mx-auto px-4 py-8 text-black relative">
-      <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white">
+      <div className="container mx-auto px-4 py-8 text-white relative">
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <input
           type="text"
           value={slotInput}
@@ -488,6 +489,7 @@ const Grid: React.FC = () => {
           }}
         />
       ))}
+    </div>
     </div>
   );
 };
